@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Трекер похудения</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root {
+            font-size: 16px;
+            color-scheme: light dark;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 8px;
+            background: #f5f5f5;
+            color: #111;
+        }
+        .app {
+            max-width: 480px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 16px 14px 20px;
+            border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+        h1 {
+            font-size: 1.3rem;
+            margin: 0 0 8px;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 0.85rem;
+            text-align: center;
+            color: #666;
+            margin-bottom: 12px;
+        }
+        .row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.85rem;
+        }
+        label { margin-bottom: 4px; }
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        textarea {
+            padding: 10px 10px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+            background: #fff;
+            color: #111;
+        }
+        textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        input[type="checkbox"] { width: 20px; height: 20px; }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 999px;
+            padding: 12px 18px;
+            font-size: 0.95rem;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background: #222;
+            color: white;
+            width: 100%;
+        }
+        .btn-small { padding: 8px 12px; font-size: 0.8rem; }
+        .btn-danger {
+            background: #c62828;
+            color: white;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 999px;
+        }
+        .settings-card,
+        .summary,
+        .praise {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .settings-card { background: #fff7f0; }
+        .settings-grid {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+        .settings-grid .field { flex: 1 1 0; }
+        .summary { background: #f0f7ff; }
+        .summary-title { font-weight: 600; margin-bottom: 4px; }
+        .summary-line { margin: 2px 0; }
+        .summary-highlight { font-weight: 600; }
+        .summary-ok { color: #2e7d32; }
+        .summary-warn { color: #c62828; }
+        .praise {
+            background: #f3f9f2;
+            border-left: 4px solid #81c784;
+        }
+        .praise-title { font-weight: 600; margin-bottom: 4px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 0.8rem;
+            display: block;
+            overflow-x: auto;
+        }
+        thead { background: #fafafa; }
+        th, td {
+            padding: 6px 4px;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            white-space: nowrap;
+        }
+        th:last-child,
+        td:last-child { text-align: right; }
+        @media (max-width: 430px) {
+            th:nth-child(8),
+            td:nth-child(8) { display: none; } /* комментарий */
+        }
+        @media (max-width: 390px) {
+            th:nth-child(7),
+            td:nth-child(7) { display: none; } /* грудь */
+        }
+
+        /* Тёмная тема по системной настройке */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #050506;
+                color: #f5f5f5;
+            }
+            .app {
+                background: #111218;
+                box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+            }
+            input[type="text"],
+            input[type="number"],
+            input[type="date"],
+            textarea {
+                background: #1b1c23;
+                border-color: #444;
+                color: #f5f5f5;
+            }
+            .subtitle { color: #aaa; }
+            .settings-card { background: #1b1410; }
+            .summary { background: #10192a; }
+            .praise { background: #122216; border-left-color: #4caf50; }
+            table thead { background: #151620; }
+            th, td { border-bottom-color: #333; }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <h1>Трекер похудения</h1>
+    <div class="subtitle">Вес, замеры, дорожка и дефицит калорий 🖤</div>
+
+    <div class="settings-card">
+        <div class="summary-title">Цель и прогресс</div>
+        <div class="settings-grid">
+            <div class="field">
+                <label for="startWeight">Стартовый вес (кг)</label>
+                <input type="number" step="0.1" id="startWeight" placeholder="68.0" />
+            </div>
+            <div class="field">
+                <label for="goalWeight">Цель (кг)</label>
+                <input type="number" step="0.1" id="goalWeight" placeholder="55.0" />
+            </div>
+        </div>
+        <button class="btn-primary btn-small" id="saveSettingsBtn">Сохранить цель</button>
+        <div id="goalInfo" style="margin-top:6px;font-size:0.8rem;"></div>
+    </div>
+
+    <div class="row" style="margin-top: 14px;">
+        <div class="field">
+            <label for="date">Дата</label>
+            <input type="date" id="date" />
+        </div>
+        <div class="field">
+            <label for="weight">Вес (кг)</label>
+            <input type="number" step="0.1" id="weight" placeholder="например, 68.0" />
+        </div>
+        <div class="field">
+            <label for="minutes">Минут на дорожке</label>
+            <input type="number" id="minutes" placeholder="например, 40" />
+        </div>
+        <div class="field">
+            <label>Замеры (см)</label>
+        </div>
+        <div class="field">
+            <label for="waist">Талия</label>
+            <input type="number" step="0.1" id="waist" placeholder="например, 70" />
+        </div>
+        <div class="field">
+            <label for="hips">Бёдра</label>
+            <input type="number" step="0.1" id="hips" placeholder="например, 100" />
+        </div>
+        <div class="field">
+            <label for="chest">Грудь</label>
+            <input type="number" step="0.1" id="chest" placeholder="по желанию" />
+        </div>
+        <div class="field">
+            <label for="comment">Комментарий</label>
+            <textarea id="comment" placeholder="Самочувствие, настроение, что помогло не сорваться..."></textarea>
+        </div>
+        <div class="field">
+            <div class="checkbox-row">
+                <input type="checkbox" id="calorieDeficit" />
+                <label for="calorieDeficit">Держала дефицит калорий</label>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-primary" id="addEntryBtn">Добавить запись</button>
+
+    <div class="summary" id="summary">
+        Нет данных пока. Добавь первую запись 😊
+    </div>
+
+    <div class="praise" id="praise" style="display:none;">
+        <div class="praise-title">Мотивашка на сегодня 💛</div>
+        <div id="praiseText"></div>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Вес</th>
+            <th>Талия</th>
+            <th>Бёдра</th>
+            <th>Грудь</th>
+            <th>Мин.</th>
+            <th>Дефицит</th>
+            <th>Комментарий</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody id="entriesBody">
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const STORAGE_KEY = "weight_tracker_entries_v3";
+    const SETTINGS_KEY = "weight_tracker_settings_v1";
+    const DEFAULT_GOAL = 55.0;
+
+    function loadEntries() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        try { return JSON.parse(raw); }
+        catch { return []; }
+    }
+
+    function saveEntries(entries) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+
+    function loadSettings() {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return { startWeight: null, goalWeight: DEFAULT_GOAL };
+        try { return JSON.parse(raw); }
+        catch { return { startWeight: null, goalWeight: DEFAULT_GOAL }; }
+    }
+
+    function saveSettings(settings) {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return "";
+        const [y, m, d] = dateStr.split("-");
+        return `${d}.${m}.${y}`;
+    }
+
+    function calculateStreak(entries) {
+        let streak = 0;
+        for (let i = entries.length - 1; i >= 0; i--) {
+            if (entries[i].calorieDeficit) streak++;
+            else break;
+        }
+        return streak;
+    }
+
+    function renderGoalInfo(settings, currentWeight) {
+        const el = document.getElementById("goalInfo");
+        const { startWeight, goalWeight } = settings;
+
+        if (!startWeight && !currentWeight) {
+            el.textContent = "Заполни стартовый вес и цель — я буду считать прогресс и сколько осталось.";
+            return;
+        }
+
+        const current = currentWeight || startWeight;
+        if (!current || !goalWeight) {
+            el.textContent = "Нужны данные о весе и цели, чтобы показывать прогресс.";
+            return;
+        }
+
+        const totalDelta = startWeight ? (startWeight - current).toFixed(1) : null;
+        const left = (current - goalWeight).toFixed(1);
+
+        let text = `Текущий вес: ${current.toFixed(1)} кг. Цель: ${goalWeight.toFixed(1)} кг. `;
+        if (totalDelta !== null) text += `Прогресс от старта: ${totalDelta} кг. `;
+
+        if (current <= goalWeight) {
+            text += "Цель достигнута или даже перевыполнена 🎉";
+        } else {
+            text += `Осталось до цели: ${left} кг. Ты на пути, не останавливайся 💪`;
+        }
+        el.textContent = text;
+    }
+
+    function renderTable() {
+        const entries = loadEntries().sort((a, b) => a.date.localeCompare(b.date));
+        const tbody = document.getElementById("entriesBody");
+        tbody.innerHTML = "";
+
+        entries.forEach((entry, index) => {
+            const tr = document.createElement("tr");
+
+            const tdDate = document.createElement("td");
+            tdDate.textContent = formatDate(entry.date);
+            tr.appendChild(tdDate);
+
+            const tdWeight = document.createElement("td");
+            tdWeight.textContent = entry.weight ? entry.weight.toFixed(1) : "";
+            tr.appendChild(tdWeight);
+
+            const tdWaist = document.createElement("td");
+            tdWaist.textContent = entry.waist ? entry.waist.toFixed(1) : "";
+            tr.appendChild(tdWaist);
+
+            const tdHips = document.createElement("td");
+            tdHips.textContent = entry.hips ? entry.hips.toFixed(1) : "";
+            tr.appendChild(tdHips);
+
+            const tdChest = document.createElement("td");
+            tdChest.textContent = entry.chest ? entry.chest.toFixed(1) : "";
+            tr.appendChild(tdChest);
+
+            const tdMinutes = document.createElement("td");
+            tdMinutes.textContent = entry.minutes || "";
+            tr.appendChild(tdMinutes);
+
+            const tdDeficit = document.createElement("td");
+            tdDeficit.textContent = entry.calorieDeficit ? "Да" : "Нет";
+            tr.appendChild(tdDeficit);
+
+            const tdComment = document.createElement("td");
+            tdComment.textContent = entry.comment || "";
+            tr.appendChild(tdComment);
+
+            const tdActions = document.createElement("td");
+            const btnDelete = document.createElement("button");
+            btnDelete.textContent = "×";
+            btnDelete.className = "btn-danger";
+            btnDelete.onclick = () => {
+                const updated = loadEntries();
+                updated.splice(index, 1);
+                saveEntries(updated);
+                renderTable();
+                renderSummary();
+                renderPraise();
+            };
+            tdActions.appendChild(btnDelete);
+            tr.appendChild(tdActions);
+
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderSummary() {
+        const entries = loadEntries().sort((a, b) => a.date.localeCompare(b.date));
+        const summaryEl = document.getElementById("summary");
+        const settings = loadSettings();
+
+        if (entries.length === 0) {
+            summaryEl.textContent = "Нет данных пока. Добавь первую запись 😊";
+            renderGoalInfo(settings, null);
+            return;
+        }
+
+        const first = entries[0];
+        const last = entries[entries.length - 1];
+        const prev = entries.length > 1 ? entries[entries.length - 2] : null;
+
+        let currentWeight = last.weight || null;
+
+        if (!settings.startWeight && first.weight) {
+            settings.startWeight = first.weight;
+            saveSettings(settings);
+        }
+
+        renderGoalInfo(settings, currentWeight);
+
+        const days = entries.length;
+        const diffTotal = (last.weight && first.weight)
+            ? (last.weight - first.weight).toFixed(1)
+            : null;
+
+        const diffDay = (prev && last.weight && prev.weight)
+            ? (last.weight - prev.weight).toFixed(1)
+            : null;
+
+        const deficitDays = entries.filter(e => e.calorieDeficit).length;
+        const totalMinutes = entries.reduce((sum, e) => sum + (e.minutes || 0), 0);
+        const streak = calculateStreak(entries);
+
+        let html = "";
+        html += `<div class="summary-title">Общая картина</div>`;
+        html += `<div class="summary-line">Записей: <span class="summary-highlight">${days}</span>, всего минут на дорожке: <span class="summary-highlight">${totalMinutes}</span>.</div>`;
+
+        if (diffTotal !== null) {
+            html += `<div class="summary-line">Изменение веса от первой записи: <span class="summary-highlight">${diffTotal} кг</span> (с ${first.weight.toFixed(1)} до ${last.weight.toFixed(1)}).</div>`;
+        }
+
+        if (diffDay !== null && diffDay !== "0.0") {
+            const cls = parseFloat(diffDay) <= 0 ? "summary-ok" : "summary-warn";
+            const signText = parseFloat(diffDay) < 0 ? "минус" : "плюс";
+            html += `<div class="summary-line ${cls}">Сегодня ${signText} ${Math.abs(diffDay)} кг относительно прошлой записи.</div>`;
+        }
+
+        if (first.waist && last.waist) {
+            const wDiff = (last.waist - first.waist).toFixed(1);
+            const signText = parseFloat(wDiff) < 0 ? "минус" : "плюс";
+            html += `<div class="summary-line">Талия: ${signText} ${Math.abs(wDiff)} см (с ${first.waist.toFixed(1)} до ${last.waist.toFixed(1)}).</div>`;
+        }
+
+        if (first.hips && last.hips) {
+            const hDiff = (last.hips - first.hips).toFixed(1);
+            const signText = parseFloat(hDiff) < 0 ? "минус" : "плюс";
+            html += `<div class="summary-line">Бёдра: ${signText} ${Math.abs(hDiff)} см (с ${first.hips.toFixed(1)} до ${last.hips.toFixed(1)}).</div>`;
+        }
+
+        html += `<div class="summary-line">Дней с дефицитом по записям: <span class="summary-highlight">${deficitDays}</span>.</div>`;
+        html += `<div class="summary-line">Серия дней без срывов (дефицит подряд): <span class="summary-highlight">${streak}</span>.</div>`;
+
+        summaryEl.innerHTML = html;
+    }
+
+    function renderPraise() {
+        const entries = loadEntries().sort((a, b) => a.date.localeCompare(b.date));
+        const praiseBox = document.getElementById("praise");
+        const praiseTextEl = document.getElementById("praiseText");
+
+        if (entries.length === 0) {
+            praiseBox.style.display = "none";
+            return;
+        }
+
+        const last = entries[entries.length - 1];
+        const prev = entries.length > 1 ? entries[entries.length - 2] : null;
+        const streak = calculateStreak(entries);
+
+        let message = "";
+
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const dd = String(today.getDate()).padStart(2, "0");
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+        const isToday = last.date === todayStr;
+
+        const diffDay = (prev && last.weight && prev.weight)
+            ? (last.weight - prev.weight).toFixed(1)
+            : null;
+
+        if (last.calorieDeficit) {
+            if (streak >= 7) {
+                message = `У тебя уже ${streak} дней подряд с дефицитом — это очень сильный уровень дисциплины 👑 Продолжай в том же духе!`;
+            } else if (streak >= 3) {
+                message = `Серия из ${streak} дней с дефицитом — ты реально держишься, это видно 🔥`;
+            } else {
+                message = `Сегодня ты держала дефицит — каждый такой день приближает тебя к цели. Горжусь твоей стойкостью 💛`;
+            }
+        } else {
+            message = `Даже если сегодня без дефицита — ты всё равно в процессе. Главное, что ты продолжаешь отслеживать и не бросаешь 💫`;
+        }
+
+        if (diffDay !== null && diffDay !== "0.0") {
+            const delta = parseFloat(diffDay);
+            if (delta < 0) {
+                message += ` А ещё вес снизился на ${Math.abs(delta)} кг с прошлой записи — это прям видимый шаг вперёд 🌟`;
+            } else if (delta > 0 && isToday) {
+                message += ` Небольшой плюс ${delta} кг — это нормально, вес всегда немного гуляет. Важен тренд, а не один день 📉`;
+            }
+        }
+
+        if (last.waist && prev && prev.waist) {
+            const wDiffDay = (last.waist - prev.waist).toFixed(1);
+            if (wDiffDay !== "0.0") {
+                const delta = parseFloat(wDiffDay);
+                if (delta < 0) {
+                    message += ` Талия стала меньше ещё на ${Math.abs(delta)} см — одежда это точно заметит 👗`;
+                }
+            }
+        }
+
+        if (isToday) {
+            message += ` И ты уже сделала шаг для себя сегодня, просто заполнив трекер. Это и есть «не срываться» 🌱`;
+        }
+
+        praiseTextEl.textContent = message;
+        praiseBox.style.display = "block";
+    }
+
+    function initTodayDate() {
+        const dateInput = document.getElementById("date");
+        if (!dateInput.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, "0");
+            const dd = String(today.getDate()).padStart(2, "0");
+            dateInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+    }
+
+    function initSettingsUI() {
+        const settings = loadSettings();
+        const entries = loadEntries().sort((a, b) => a.date.localeCompare(b.date));
+        const startWeightInput = document.getElementById("startWeight");
+        const goalWeightInput = document.getElementById("goalWeight");
+
+        if (settings.startWeight) {
+            startWeightInput.value = settings.startWeight;
+        } else if (entries.length > 0 && entries[0].weight) {
+            startWeightInput.value = entries[0].weight;
+        }
+
+        if (settings.goalWeight) {
+            goalWeightInput.value = settings.goalWeight;
+        } else {
+            goalWeightInput.value = DEFAULT_GOAL;
+        }
+    }
+
+    document.getElementById("addEntryBtn").addEventListener("click", () => {
+        const date = document.getElementById("date").value;
+        const weight = parseFloat(document.getElementById("weight").value);
+        const minutes = parseInt(document.getElementById("minutes").value || "0", 10);
+        const waist = parseFloat(document.getElementById("waist").value);
+        const hips = parseFloat(document.getElementById("hips").value);
+        const chest = parseFloat(document.getElementById("chest").value);
+        const comment = document.getElementById("comment").value.trim();
+        const calorieDeficit = document.getElementById("calorieDeficit").checked;
+
+        if (!date) {
+            alert("Выбери дату");
+            return;
+        }
+        if (isNaN(weight)) {
+            alert("Введи вес");
+            return;
+        }
+
+        const entry = {
+            date,
+            weight,
+            minutes,
+            waist: isNaN(waist) ? null : waist,
+            hips: isNaN(hips) ? null : hips,
+            chest: isNaN(chest) ? null : chest,
+            comment,
+            calorieDeficit
+        };
+
+        const entries = loadEntries();
+        entries.push(entry);
+        saveEntries(entries);
+
+        document.getElementById("minutes").value = "";
+        document.getElementById("waist").value = "";
+        document.getElementById("hips").value = "";
+        document.getElementById("chest").value = "";
+        document.getElementById("comment").value = "";
+        document.getElementById("calorieDeficit").checked = false;
+
+        renderTable();
+        renderSummary();
+        renderPraise();
+        alert("Запись сохранена ✅");
+    });
+
+    document.getElementById("saveSettingsBtn").addEventListener("click", () => {
+        const startWeightVal = parseFloat(document.getElementById("startWeight").value);
+        const goalWeightVal = parseFloat(document.getElementById("goalWeight").value);
+
+        const settings = {
+            startWeight: isNaN(startWeightVal) ? null : startWeightVal,
+            goalWeight: isNaN(goalWeightVal) ? DEFAULT_GOAL : goalWeightVal
+        };
+
+        saveSettings(settings);
+        renderSummary();
+        alert("Цель сохранена 💪");
+    });
+
+    // старт
+    initTodayDate();
+    initSettingsUI();
+    renderTable();
+    renderSummary();
+    renderPraise();
+</script>
+</body>
+</html>
